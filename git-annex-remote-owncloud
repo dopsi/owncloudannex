@@ -28,9 +28,9 @@ if dbglevel:
 
 sys.path.append(pwd + '/lib')
 
-import CommonFunctions as common
+import owncloudannex.CommonFunctions as common
 
-import davlib
+import owncloudannex.davlib as davlib
 client = False
 encAuth = False
 cache = {}
@@ -38,7 +38,7 @@ cache = {}
 def login(user, pword):
     common.log("")
     global client, encAuth
-    
+
     base = conf["url"]
     base = base[base.find("//") + 2: base.find("/", 8)]
     encAuth = {"Authorization": "Basic %s" % ( base64.encodestring(user+":"+pword).strip() ) }
@@ -96,7 +96,7 @@ class BufferReader(io.BytesIO):
 
 def postFile(subject, filename, folder):
     common.log("%s to %s - %s" % ( repr(filename), folder[0], subject))
-    
+
     tmp_file = findInFolder(subject, folder)
     if tmp_file:
         common.log("File already exists: " + repr(tmp_file))
@@ -142,7 +142,7 @@ def findInFolder(subject, folder="/"):
         common.log("Returning from cache")
         return cache[tmp_path]
     else:
-	common.log("No match in cache")
+        common.log("No match in cache")
 
     try:
         bla = client.propfind(tpath, depth=1, extra_hdrs=encAuth)
@@ -162,14 +162,14 @@ def findInFolder(subject, folder="/"):
         tmp_file = urllib.unquote_plus(tmp_file)
         tmp_file = tmp_file.replace(host, "")
         common.log("folder1: " + tmp_file + " - " + tmp_path, 3)
-	if tmp_file[len(tmp_file) - 1] == "/":
-	   tmp_file = tmp_file[:len(tmp_file) - 1]
+        if tmp_file[len(tmp_file) - 1] == "/":
+            tmp_file = tmp_file[:len(tmp_file) - 1]
         cache[tmp_file] = tmp_file.replace(base, "/")
 
     common.log("Updated cache: " + repr(cache), 3)
     for tmp_file in cache.keys():
         common.log("folder: " + tmp_file + " - " + tmp_path, 3)
-    	if tmp_file == tmp_path:
+        if tmp_file == tmp_path:
             common.log("Done: " + repr(cache[tmp_file]))
             return cache[tmp_file]
 
@@ -203,7 +203,7 @@ def getFile(subject, filename, folder):
             return response._read_chunked(amt)
 
         if amt is None:
-            # unbounded read     
+            # unbounded read
             if response.length is None:
                 s = response.fp.read()
                 common.log("READING fp", 2)
@@ -221,24 +221,24 @@ def getFile(subject, filename, folder):
                     s += response._safe_read(tsize)
                     common.progress(response.length, len(s))
                 response.length = 0
-            response.close()        # we read everything     
+            response.close()        # we read everything
             return s
 
         if response.length is not None:
             if amt > response.length:
-                # clip the read to the "end of response"        
+                # clip the read to the "end of response"
                 amt = response.length
 
-        # we do not use _safe_read() here because this may be a .will_close     
-        # connection, and the user is reading more bytes than will be provided  
-        # (for example, reading in 1k chunks)                                   
+        # we do not use _safe_read() here because this may be a .will_close
+        # connection, and the user is reading more bytes than will be provided
+        # (for example, reading in 1k chunks)
         s = response.fp.read(amt)
         if response.length is not None:
             response.length -= len(s)
             if not response.length:
                 response.close()
         return s
-    
+
     tmp_file = findInFolder(subject, folder)
     if tmp_file:
         base = conf["url"][conf["url"].find("/", 8):]
